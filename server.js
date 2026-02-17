@@ -1,5 +1,7 @@
 const express = require("express");
-const ytdl = require("ytdl-core");
+const https = require("https");
+const http = require("http");
+const { URL } = require("url");
 
 const app = express();
 
@@ -7,34 +9,34 @@ app.get("/", (req, res) => {
   res.send("Video Downloader Server Running");
 });
 
-app.get("/download", async (req, res) => {
-  const url = req.query.url;
+app.get("/download", (req, res) => {
+  const fileUrl = req.query.url;
 
-  if (!url) {
-    return res.status(400).send("Missing URL");
+  if (!fileUrl) {
+    return res.status(400).send("Missing url");
   }
 
   try {
-    const info = await ytdl.getInfo(url);
-    const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
+    const parsedUrl = new URL(fileUrl);
+    const client = parsedUrl.protocol === "https:" ? https : http;
 
-    res.header(
+    const filename = parsedUrl.pathname.split("/").pop();
+
+    res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${title}.mp4"`
+      `attachment; filename="${filename}"`
     );
 
-    ytdl(url, {
-      format: "mp4",
-      quality: "highest"
-    }).pipe(res);
+    client.get(fileUrl, (response) => {
+      response.pipe(res);
+    });
 
-  } catch (error) {
-    console.log(error);
-    res.status(500).send("Error downloading video");
+  } catch (err) {
+    res.status(500).send("Download error");
   }
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
