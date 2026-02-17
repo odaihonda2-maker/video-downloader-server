@@ -16,7 +16,7 @@ app.get("/download", async (req, res) => {
 
   try {
     const info = await ytdl.getInfo(url);
-    const title = info.videoDetails.title;
+    const title = info.videoDetails.title.replace(/[^\w\s]/gi, '');
 
     res.header(
       "Content-Disposition",
@@ -25,13 +25,16 @@ app.get("/download", async (req, res) => {
 
     ytdl(url, {
       format: "mp4",
+      quality: "highest"
     }).pipe(res);
+
   } catch (error) {
+    console.log(error);
     res.status(500).send("Error downloading video");
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
